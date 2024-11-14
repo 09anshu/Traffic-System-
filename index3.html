@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    .container {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .intersection {
+      position: relative;
+      width: 400px;
+      height: 400px;
+      background: #333;
+      margin: 20px auto;
+      overflow: hidden;
+    }
+    
+    .road-horizontal, .road-vertical {
+      position: absolute;
+      background: #666;
+    }
+
+    .road-horizontal {
+      top: 175px;
+      width: 100%;
+      height: 50px;
+    }
+    
+    .road-vertical {
+      left: 175px;
+      height: 100%;
+      width: 50px;
+    }
+
+    .bypass-lane-horizontal {
+      position: absolute;
+      width: 10px;
+      height: 100%;
+      background: #444;
+      top: 175px;
+    }
+
+    .bypass-lane-vertical {
+      position: absolute;
+      width: 100%;
+      height: 10px;
+      background: #444;
+      left: 175px;
+    }
+
+    .bypass-lane-top { top: 165px; left: 195px; }
+    .bypass-lane-bottom { top: 225px; left: 195px; }
+    .bypass-lane-left { left: 165px; top: 195px; }
+    .bypass-lane-right { left: 225px; top: 195px; }
+
+    .traffic-light {
+      width: 30px;
+      height: 90px;
+      background: #222;
+      position: absolute;
+      border-radius: 5px;
+      padding: 5px;
+      z-index: 10;
+    }
+    
+    .light {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin: 5px auto;
+      background: #333;
+    }
+    
+    .active-red { background: #ff0000; }
+    .active-yellow { background: #ffff00; }
+    .active-green { background: #00ff00; }
+    
+    .controls {
+      text-align: center;
+      margin: 20px;
+    }
+    
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    
+    .metrics {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+
+    .car, .ambulance {
+      position: absolute;
+      width: 30px;
+      height: 20px;
+      border-radius: 4px;
+      transition: all 1s linear;
+    }
+
+    .car {
+      background: #f00;
+    }
+
+    .ambulance {
+      background: #fff;
+      border: 2px solid red;
+      animation: flash 0.5s alternate infinite, move 5s linear infinite;
+    }
+
+    .car.horizontal { width: 30px; height: 20px; }
+    .car.vertical { width: 20px; height: 30px; }
+    .ambulance.horizontal { width: 30px; height: 20px; }
+    .ambulance.vertical { width: 20px; height: 30px; }
+
+    .car.waiting {
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes flash {
+      0% { background-color: #ff0000; }
+      50% { background-color: #ffffff; }
+      100% { background-color: #ff0000; }
+    }
+
+    @keyframes move {
+      0% { top: -30px; left: 200px; }
+      100% { top: 400px; left: 200px; }
+    }
+
+    @keyframes moveLeftToRight {
+      0% { left: -30px; top: 200px; }
+      100% { left: 400px; top: 200px; }
+    }
+
+    @keyframes moveRightToLeft {
+      0% { left: 430px; top: 200px; }
+      100% { left: -30px; top: 200px; }
+    }
+
+    @keyframes moveTopToBottom {
+      0% { top: -30px; left: 200px; }
+      100% { top: 400px; left: 200px; }
+    }
+
+    @keyframes moveBottomToTop {
+      0% { top: 430px; left: 200px; }
+      100% { top: -30px; left: 200px; }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Adaptive Traffic Light Management System</h1>
+    
+    <div class="metrics">
+      <h3>Traffic Metrics</h3>
+      <p>Current Mode: <span id="mode">Automatic</span></p>
+      <p>Cycle Time: <span id="cycleTime">30</span> seconds</p>
+      <p>Cars Waiting: North-South: <span id="nsCount">0</span>, East-West: <span id="ewCount">0</span></p>
+    </div>
+
+    <div class="intersection" id="intersection">
+      <div class="road-horizontal"></div>
+      <div class="road-vertical"></div>
+
+      <!-- Bypass lanes -->
+      <div class="bypass-lane-horizontal bypass-lane-top"></div>
+      <div class="bypass-lane-horizontal bypass-lane-bottom"></div>
+      <div class="bypass-lane-vertical bypass-lane-left"></div>
+      <div class="bypass-lane-vertical bypass-lane-right"></div>
+      
+      <!-- Traffic Lights -->
+      <div class="traffic-light" style="top: 20px; left: 235px;">
+        <div class="light" id="n-red"></div>
+        <div class="light" id="n-yellow"></div>
+        <div class="light" id="n-green"></div>
+      </div>
+      <div class="traffic-light" style="bottom: 20px; left: 135px;">
+        <div class="light" id="s-red"></div>
+        <div class="light" id="s-yellow"></div>
+        <div class="light" id="s-green"></div>
+      </div>
+      <div class="traffic-light" style="top: 135px; right: 20px;">
+        <div class="light" id="e-red"></div>
+        <div class="light" id="e-yellow"></div>
+        <div class="light" id="e-green"></div>
+      </div>
+      <div class="traffic-light" style="top: 235px; left: 20px;">
+        <div class="light" id="w-red"></div>
+        <div class="light" id="w-yellow"></div>
+        <div class="light" id="w-green"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button onclick="simulateTraffic()">Simulate Traffic</button>
+    </div>
+  </div>
+
+  <script>
+    let nsTraffic = 0;
+    let ewTraffic = 0;
+    let currentPhase = 'ns';
+    let cycleTime = 30;
+    const minCycleTime = 10; 
+    const maxCycleTime = 60;
+
+    function updateLights() {
+      resetLights();
+      if (currentPhase === 'ns') {
+        setLight('n', 'green');
+        setLight('s', 'green');
+        setLight('e', 'red');
+        setLight('w', 'red');
+        releaseCars('ns');
+      } else {
+        setLight('n', 'red');
+        setLight('s', 'red');
+        setLight('e', 'green');
+        setLight('w', 'green');
+        releaseCars('ew');
+      }
+    }
+
+    function resetLights() {
+      document.querySelectorAll('.light').forEach(light => light.className = 'light');
+    }
+
+    function setLight(direction, color) {
+      document.getElementById(`${direction}-${color}`).classList.add(`active-${color}`);
+    }
+
+    function releaseCars(direction) {
+      const waitingCars = document.querySelectorAll(`.car.${direction === 'ns' ? 'vertical' : 'horizontal'}.waiting`);
+      waitingCars.forEach(car => {
+        car.classList.remove('waiting');
+        car.style[direction === 'ns' ? 'top' : 'left'] = '400px';
+        setTimeout(() => car.remove(), 1000);
+      });
+    }
+
+    function createCar(direction) {
+      const intersection = document.getElementById('intersection');
+      const car = document.createElement('div');
+      car.className = `car ${direction === 'ns' ? 'vertical' : 'horizontal'}`;
+      car.style[direction === 'ns' ? 'top' : 'left'] = '-30px';
+      car.style[direction === 'ns' ? 'left' : 'top'] = '190px';
+      intersection.appendChild(car);
+      setTimeout(() => {
+        car.style[direction === 'ns' ? 'top' : 'left'] = '150px';
+        car.classList.add('waiting');
+      }, 50);
+    }
+
+    function createAmbulance() {
+      const intersection = document.getElementById('intersection');
+      const ambulance = document.createElement('div');
+      const direction = ['ns', 'ew'][Math.floor(Math.random() * 2)];
+      ambulance.className = `ambulance ${direction === 'ns' ? 'vertical' : 'horizontal'}`;
+      
+      if (direction === 'ns') {
+        ambulance.style.top = '-30px';
+        ambulance.style.left = '190px';
+        ambulance.style.animation = 'moveTopToBottom 5s linear infinite';
+      } else {
+        ambulance.style.top = '190px';
+        ambulance.style.left = '-30px';
+        ambulance.style.animation = 'moveLeftToRight 5s linear infinite';
+      }
+      intersection.appendChild(ambulance);
+    }
+
+    function simulateTraffic() {
+      if (Math.random() > 0.5) {
+        nsTraffic += Math.floor(Math.random() * 3) + 1;
+        createCar('ns');
+      }
+      if (Math.random() > 0.5) {
+        ewTraffic += Math.floor(Math.random() * 3) + 1;
+        createCar('ew');
+      }
+
+      document.getElementById('nsCount').textContent = nsTraffic;
+      document.getElementById('ewCount').textContent = ewTraffic;
+
+      adjustCycleTime();
+      updateLights();
+
+      if (Math.random() > 0.9) {
+        createAmbulance();
+      }
+    }
+
+    function adjustCycleTime() {
+      let nsWeight = nsTraffic / (nsTraffic + ewTraffic + 1);
+      let ewWeight = ewTraffic / (nsTraffic + ewTraffic + 1);
+
+      if (nsWeight > ewWeight) {
+        cycleTime = minCycleTime + nsWeight * (maxCycleTime - minCycleTime);
+        currentPhase = 'ns';
+      } else {
+        cycleTime = minCycleTime + ewWeight * (maxCycleTime - minCycleTime);
+        currentPhase = 'ew';
+      }
+
+      document.getElementById('cycleTime').textContent = Math.round(cycleTime);
+    }
+
+    setInterval(() => {
+      currentPhase = currentPhase === 'ns' ? 'ew' : 'ns';
+      adjustCycleTime();
+      updateLights();
+    }, cycleTime * 1000);
+
+    setInterval(simulateTraffic, 3000);
+  </script>
+</body>
+</html>
